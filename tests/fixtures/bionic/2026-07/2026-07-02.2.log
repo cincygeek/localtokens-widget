@@ -1,0 +1,4 @@
+0.20.000.001 I slot print_timing: id  2 | task 5 |        eval time =     600.00 ms /    30 tokens (   20.00 ms per token,    50.00 tokens per second)
+0.20.000.002 I slot print_timing: id  2 | task 5 |       total time =     900.00 ms /   330 tokens
+[2026-07-02 11:30:02][DEBUG] 0.20.000.003 I slot      release: id  2 | task 5 | stop processing: n_tokens = 2329, truncated = 0
+[2026-07-02 11:30:02][INFO][qwen/qwen3.5-9b] Finished streaming response

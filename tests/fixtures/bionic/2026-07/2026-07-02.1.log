@@ -1,0 +1,14 @@
+[2026-07-02 10:00:00][INFO][LM STUDIO SERVER] Success! HTTP server listening on port 1234
+[2026-07-02 10:00:00][INFO][LM STUDIO SERVER] Logs are saved into C:\Users\example\.lmstudio\apps\bionic\server-logs
+[2026-07-02 10:00:02][DEBUG] 0.00.020.000 I srv    load_model: loading model 'C:\models\GLM-4.7-Flash-Q4_K_M.gguf'
+[2026-07-02 10:00:09][DEBUG] 0.07.000.000 I srv    load_model: initializing, n_slots = 4, n_ctx_slot = 65536, kv_unified = 'true'
+[2026-07-02 10:00:10][WARN][zai-org/glm-4.7-flash] Reasoning setting 'medium' is not supported by model 'zai-org/glm-4.7-flash'.
+[2026-07-02 10:00:10][INFO][zai-org/glm-4.7-flash] Running chat completion on conversation with 2 messages.
+[2026-07-02 10:00:20][DEBUG] 0.18.000.000 I slot print_timing: id  1 | task 0 | prompt eval time =    8000.00 ms /  2000 tokens (    4.00 ms per token,   250.00 tokens per second)
+0.18.000.001 I slot print_timing: id  1 | task 0 |        eval time =   10000.00 ms /   200 tokens (   50.00 ms per token,    20.00 tokens per second)
+0.18.000.002 I slot print_timing: id  1 | task 0 |       total time =   18000.00 ms /  2200 tokens
+[2026-07-02 10:00:20][DEBUG] 0.18.000.003 I slot      release: id  1 | task 0 | stop processing: n_tokens = 2199, truncated = 0
+[2026-07-02 10:00:20][INFO][zai-org/glm-4.7-flash] Finished streaming response
+[2026-07-02 10:01:00][ERROR][zai-org/glm-4.7-flash] Error: context length exceeded
+[2026-07-02 11:30:00][INFO][qwen/qwen3.5-9b] Running chat completion on conversation with 3 messages.
+[2026-07-02 11:30:02][DEBUG] 0.20.000.000 I slot print_timing: id  2 | task 5 | prompt eval time =     300.00 ms /   300 tokens (    1.00 ms per token,  1000.00 tokens per second)

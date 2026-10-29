@@ -1,0 +1,29 @@
+# Push a tag like v0.1.0 to build the zip and publish a GitHub release with it.
+name: release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Test
+        shell: powershell
+        run: .\tests\Test-LocalTokens.ps1
+
+      - name: Package
+        shell: powershell
+        run: .\tools\Package.ps1
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true

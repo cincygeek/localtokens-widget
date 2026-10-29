@@ -1,0 +1,22 @@
+[2026-07-01 09:00:00][INFO][LM STUDIO SERVER] Success! HTTP server listening on port 1234
+[2026-07-01 09:00:00][INFO][LM STUDIO SERVER] Logs are saved into C:\Users\example\.lmstudio\server-logs
+[2026-07-01 09:00:05][DEBUG] 0.00.010.000 I srv    load_model: loading model 'C:\models\Qwen3.5-9B-Q4_K_M.gguf'
+[2026-07-01 09:00:09][DEBUG] 0.04.000.000 I srv    load_model: initializing, n_slots = 4, n_ctx_slot = 32768, kv_unified = 'true'
+[2026-07-01 09:00:10][INFO][qwen/qwen3.5-9b] Running chat completion on conversation with 2 messages.
+[2026-07-01 09:00:10][INFO][qwen/qwen3.5-9b] Prompt processing progress: 0.0%
+[2026-07-01 09:00:11][DEBUG] 0.06.000.000 I slot print_timing: id  0 | task 0 | n_gen =     50, tg =  50.00 t/s, tg_3s =  50.00 t/s
+[2026-07-01 09:00:12][DEBUG] 0.07.000.000 I slot print_timing: id  0 | task 0 | prompt eval time =    1000.00 ms /  1000 tokens (    1.00 ms per token,  1000.00 tokens per second)
+0.07.000.001 I slot print_timing: id  0 | task 0 |        eval time =    2000.00 ms /   100 tokens (   20.00 ms per token,    50.00 tokens per second)
+0.07.000.002 I slot print_timing: id  0 | task 0 |       total time =    3000.00 ms /  1100 tokens
+[2026-07-01 09:00:12][DEBUG] 0.07.000.003 I slot      release: id  0 | task 0 | stop processing: n_tokens = 1099, truncated = 0
+[2026-07-01 09:00:12][INFO][qwen/qwen3.5-9b] Finished streaming response
+[2026-07-01 09:05:00][DEBUG] Received request: POST to /v1/chat/completions with body {
+  "model": "qwen/qwen3.5-9b",
+  "messages": [ { "role": "user", "content": "[2026-07-01 09:05:00][ERROR][not-a-model] text inside a prompt is not a log line" } ]
+}
+[2026-07-01 09:05:01][INFO][qwen/qwen3.5-9b] Running chat completion on conversation with 4 messages.
+[2026-07-01 09:05:03][DEBUG] 0.10.000.000 I slot print_timing: id  0 | task 1 | prompt eval time =     500.00 ms /   500 tokens (    1.00 ms per token,  1000.00 tokens per second)
+0.10.000.001 I slot print_timing: id  0 | task 1 |        eval time =    2000.00 ms /   100 tokens (   20.00 ms per token,    50.00 tokens per second)
+0.10.000.002 I slot print_timing: id  0 | task 1 |       total time =    2500.00 ms /   600 tokens
+[2026-07-01 09:05:03][DEBUG] 0.10.000.003 I slot      release: id  0 | task 1 | stop processing: n_tokens = 3099, truncated = 0
+[2026-07-01 09:05:03][INFO][qwen/qwen3.5-9b] Finished streaming response
