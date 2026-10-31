@@ -1,0 +1,52 @@
+name: Feature request
+description: Suggest something LocalTokens should do or show
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea! Please check the [existing requests](../issues?q=label%3Aenhancement) first - if yours is there, add a 👍 to it instead.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The situation or question you have, e.g. "I want to know which model costs me the most time each week."
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like LocalTokens to do?
+      description: Describe the feature. A sketch or screenshot of something similar helps.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of LocalTokens?
+      options:
+        - Main window
+        - Details view
+        - Tray icon or menu
+        - Stats and numbers
+        - Themes and looks
+        - CSV export
+        - Settings
+        - Support for another LLM app (not LM Studio)
+        - Something else
+    validations:
+      required: true
+  - type: dropdown
+    id: importance
+    attributes:
+      label: How much would this matter to you?
+      options:
+        - Nice to have
+        - I'd use it often
+        - I can't use LocalTokens without it
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything else?
+      description: Workarounds you use today, other tools that do this, or details.
