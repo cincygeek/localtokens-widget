@@ -1,5 +1,10 @@
 # LocalTokens
 
+[![Release](https://img.shields.io/github/v/release/cincygeek/localtokens-widget?label=release)](https://github.com/cincygeek/localtokens-widget/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/cincygeek/localtokens-widget/total)](https://github.com/cincygeek/localtokens-widget/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Windows](https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?logo=windows)](https://github.com/cincygeek/localtokens-widget/releases/latest)
+
 **See how hard your local LLMs are working.** LocalTokens is a small always-on window
 and tray icon for Windows. It shows how many tokens your models in [LM Studio](https://lmstudio.ai)
 process: this session, today, this week and all time, per model, and how fast they run.
