@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Reports tab: totals for the last 24 hours, today, the last 7 days, 30 days or 12 months, with the change from the period before, a chart by hour, day or month, a per-model breakdown, and a CSV export of just that period
+
 ## 0.1.0
 
 First release.

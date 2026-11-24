@@ -52,6 +52,56 @@
         </StackPanel>
       </Grid>
 
+      <!-- tabs: Live (what the server is doing) and Reports (totals for a period) -->
+      <Grid Margin="0,0,0,8">
+        <Border Background="{DynamicResource Line}" Height="1" VerticalAlignment="Bottom"/>
+        <StackPanel Orientation="Horizontal">
+          <StackPanel x:Name="TabLive" Background="Transparent" Cursor="Hand" Margin="0,0,14,0">
+            <TextBlock x:Name="TabLiveText" Text="Live" FontFamily="Segoe UI" FontSize="10.5" Margin="0,0,0,4"/>
+            <Border x:Name="TabLiveLine" Height="2" CornerRadius="1"/>
+          </StackPanel>
+          <StackPanel x:Name="TabReports" Background="Transparent" Cursor="Hand">
+            <TextBlock x:Name="TabReportsText" Text="Reports" FontFamily="Segoe UI" FontSize="10.5" Margin="0,0,0,4"/>
+            <Border x:Name="TabReportsLine" Height="2" CornerRadius="1"/>
+          </StackPanel>
+        </StackPanel>
+      </Grid>
+
+      <!-- reports: built by Update-Report in lib\view.ps1 -->
+      <StackPanel x:Name="ReportPanel" Visibility="Collapsed">
+        <Border Background="{DynamicResource Track}" CornerRadius="6" Padding="2" Margin="0,0,0,10">
+          <UniformGrid x:Name="PeriodBar" Rows="1"/>
+        </Border>
+        <TextBlock x:Name="RpRange" Text="" FontFamily="Segoe UI" FontSize="9.5" Foreground="{DynamicResource Dim}" Margin="0,0,0,1"/>
+        <StackPanel Orientation="Horizontal">
+          <TextBlock x:Name="RpBig" Text="--" FontFamily="Segoe UI" FontSize="30" FontWeight="Light" Foreground="{DynamicResource TextHi}"/>
+          <TextBlock Text="tokens" FontFamily="Segoe UI" FontSize="11" Foreground="{DynamicResource Muted}" Margin="5,0,0,8" VerticalAlignment="Bottom"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,9" Background="Transparent" x:Name="RpDelta">
+          <TextBlock x:Name="RpDeltaPct" Text="" FontFamily="Segoe UI" FontSize="10" Margin="0,0,4,0"/>
+          <TextBlock x:Name="RpDeltaText" Text="" FontFamily="Segoe UI" FontSize="10" Foreground="{DynamicResource Muted}"/>
+        </StackPanel>
+
+        <TextBlock x:Name="RpChartLbl" Text="BY HOUR" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource Dim}" Margin="0,0,0,4"/>
+        <Canvas x:Name="RpChart" Height="42" Background="Transparent"/>
+        <Grid Margin="0,1,0,10">
+          <TextBlock x:Name="RpAxL" Text="" FontFamily="Segoe UI" FontSize="9" Foreground="{DynamicResource Dim}"/>
+          <TextBlock x:Name="RpAxR" Text="" FontFamily="Segoe UI" FontSize="9" Foreground="{DynamicResource Dim}" HorizontalAlignment="Right"/>
+        </Grid>
+
+        <Border Background="{DynamicResource Line}" Height="1" Margin="0,0,0,8"/>
+        <TextBlock Text="TOTALS" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource Dim}" Margin="0,0,0,4"/>
+        <UniformGrid x:Name="RpStats" Columns="2" Margin="0,0,0,10"/>
+
+        <Border Background="{DynamicResource Line}" Height="1" Margin="0,0,0,8"/>
+        <TextBlock Text="BY MODEL" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource Dim}" Margin="0,0,0,4"/>
+        <StackPanel x:Name="RpModels"/>
+
+        <TextBlock x:Name="RpExport" Text="Export this period to CSV" FontFamily="Segoe UI" FontSize="9.5" Style="{StaticResource Btn}"
+                   HorizontalAlignment="Right" Margin="0,6,0,0"/>
+      </StackPanel>
+
+      <StackPanel x:Name="LivePanel">
       <!-- status: what the active server is doing -->
       <Grid Margin="0,0,0,1">
         <StackPanel Orientation="Horizontal">
@@ -119,6 +169,7 @@
         <Border Background="{DynamicResource Line}" Height="1" Margin="0,0,0,8"/>
         <TextBlock Text="LOG FOLDERS" FontFamily="Segoe UI" FontSize="9" FontWeight="SemiBold" Foreground="{DynamicResource Dim}" Margin="0,0,0,4"/>
         <StackPanel x:Name="SourceList"/>
+      </StackPanel>
       </StackPanel>
 
       <Grid Margin="0,9,0,0">

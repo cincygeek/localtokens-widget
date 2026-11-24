@@ -80,6 +80,44 @@ try {
         $rows = Import-Csv $csv
         Check 'csv qwen 07-01 requests' (@($rows | Where-Object { $_.date -eq '2026-07-01' })[0].requests) 2
         Check 'csv total tokens'     (($rows | Measure-Object total_tokens -Sum).Sum) 4230
+
+        # Reports, seen from Jul 2 2026 12:20: main's two requests are Jul 1 09:00,
+        # bionic's are Jul 2 10:00 (glm, 2200 tokens, 1 error) and 11:30 (qwen, 330).
+        $now = [datetime]'2026-07-02 12:20'
+        $r = $mon.GetReport('24h', $now)
+        Check 'report 24h tokens'     $r.Total.Tokens 2530
+        Check 'report 24h requests'   $r.Total.Req 2
+        Check 'report 24h errors'     $r.Total.Err 1
+        Check 'report 24h slots'      $r.Series.Length 24
+        Check 'report 24h 10am slot'  $r.Series[21] 2200
+        Check 'report 24h prev'       $r.Prev.Tokens 1700
+        Check 'report 24h first'      $r.SlotStart[0].ToString('yyyy-MM-dd HH:mm') '2026-07-01 13:00'
+        $r = $mon.GetReport('today', $now)
+        Check 'report today tokens'   $r.Total.Tokens 2530
+        Check 'report today slots'    $r.Series.Length 13
+        Check 'report today prev'     $r.Prev.Tokens 1700
+        $r = $mon.GetReport('today', [datetime]'2026-07-02 08:00')
+        Check 'report early prev'     $r.Prev.Tokens 0
+        $r = $mon.GetReport('week', $now)
+        Check 'report week tokens'    $r.Total.Tokens 4230
+        Check 'report week slots'     $r.Series.Length 7
+        Check 'report week days'      "$($r.Series[5]),$($r.Series[6])" '1700,2530'
+        Check 'report week prev'      $r.Prev.Req 0
+        $r = $mon.GetReport('month', [datetime]'2026-07-30 09:00')
+        Check 'report month tokens'   $r.Total.Tokens 4230
+        Check 'report month slots'    $r.Series.Length 30
+        $r = $mon.GetReport('month', [datetime]'2026-08-01 09:00')
+        Check 'report month later'    "$($r.Total.Tokens)/$($r.Prev.Tokens)" '0/4230'
+        $r = $mon.GetReport('year', $now)
+        Check 'report year slots'     $r.Series.Length 12
+        Check 'report year July'      $r.Series[11] 4230
+        Check 'report year first'     $r.SlotStart[0].ToString('yyyy-MM') '2025-08'
+        Check 'report year models'    (($r.Models | ForEach-Object { "$($_.Model)=$($_.Tokens)" }) -join ';') 'zai-org/glm-4.7-flash=2200;qwen/qwen3.5-9b=2030'
+        $r = $mon.GetReport('nonsense', $now)
+        Check 'report unknown period' $r.Period '24h'
+        $r = $mon.GetReport('24h', $now)
+        Check 'csv 24h rows'          $mon.ExportCsv($csv, $r.From, $r.To) 2
+        Check 'csv 24h total'         ((Import-Csv $csv | Measure-Object total_tokens -Sum).Sum) 2530
         $mon.Stop()
     }
 } finally {
@@ -104,7 +142,8 @@ if ($env:OS -eq 'Windows_NT' -and [System.Threading.Thread]::CurrentThread.Apart
     Add-Type -AssemblyName PresentationFramework
     [xml]$x = Get-Content -Raw -Encoding UTF8 (Join-Path $root 'src\window.xaml')
     $w = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader $x))
-    foreach ($n in 'Root', 'Pattern', 'Big', 'Status', 'GenBar', 'CtxBar', 'Details', 'Hourly', 'Totals', 'Models', 'LastReq', 'LoadedList', 'SourceList') {
+    foreach ($n in 'Root', 'Pattern', 'Big', 'Status', 'GenBar', 'CtxBar', 'Details', 'Hourly', 'Totals', 'Models', 'LastReq', 'LoadedList', 'SourceList',
+                'LivePanel', 'ReportPanel', 'TabLive', 'TabReports', 'PeriodBar', 'RpBig', 'RpChart', 'RpStats', 'RpModels', 'RpExport') {
         Check "element $n" ($null -ne $w.FindName($n)) $true
     }
 }

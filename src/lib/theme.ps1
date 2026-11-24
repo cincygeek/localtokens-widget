@@ -153,5 +153,6 @@ function Set-Theme {
     # redraw what was built with the old colours
     $script:DetKey = $null
     $script:BarsKey = $null
+    $script:RpKey = $null
     $script:IconKey = ''
 }

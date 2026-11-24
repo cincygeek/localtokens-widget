@@ -69,6 +69,17 @@ public class Snapshot {
     public List<SourceInfo> Sources;
 }
 
+public class Report {
+    public string Period;                  // "24h", "today", "week", "month" or "year"
+    public string Unit;                    // chart steps: "hour", "day" or "month"
+    public DateTime From, To;              // the period: hours in [From, To)
+    public DateTime PrevFrom, PrevTo;      // the period before it, for the change
+    public ModelRow Total, Prev;
+    public List<ModelRow> Models;          // most tokens first
+    public long[] Series, SeriesReq;       // tokens and requests per step, oldest first
+    public DateTime[] SlotStart;
+}
+
 // Everything the parser carries from line to line, per log folder: each folder is
 // written by its own server, so their timing blocks and sessions never mix.
 class ParserState {
@@ -488,16 +499,94 @@ public class LogMonitor {
         return r;
     }
 
+    // ------------------------------------------------------------- report ----
+    // Totals for one period ("24h", "today", "week", "month", "year"), every log folder
+    // combined, plus the same totals for the period just before it and a series of
+    // tokens per hour, day or month for the chart. Built from the hourly buckets, so
+    // it covers everything ever read, not only the last week.
+
+    public Report GetReport(string period) { return GetReport(period, DateTime.Now); }
+
+    public Report GetReport(string period, DateTime now) {
+        var r = new Report();
+        DateTime hourNow = new DateTime(now.Year, now.Month, now.Day, now.Hour, 0, 0);
+        DateTime monthNow = new DateTime(now.Year, now.Month, 1);
+        switch (period) {
+            case "today":
+                r.Unit = "hour"; r.From = now.Date; r.To = hourNow.AddHours(1);
+                r.PrevFrom = r.From.AddDays(-1); r.PrevTo = r.To.AddDays(-1);      // yesterday up to this hour
+                break;
+            case "week":
+                r.Unit = "day"; r.From = now.Date.AddDays(-6); r.To = now.Date.AddDays(1);
+                r.PrevFrom = r.From.AddDays(-7); r.PrevTo = r.From;
+                break;
+            case "month":
+                r.Unit = "day"; r.From = now.Date.AddDays(-29); r.To = now.Date.AddDays(1);
+                r.PrevFrom = r.From.AddDays(-30); r.PrevTo = r.From;
+                break;
+            case "year":
+                r.Unit = "month"; r.From = monthNow.AddMonths(-11); r.To = monthNow.AddMonths(1);
+                r.PrevFrom = r.From.AddMonths(-12); r.PrevTo = r.From;
+                break;
+            default:
+                period = "24h";
+                r.Unit = "hour"; r.From = hourNow.AddHours(-23); r.To = hourNow.AddHours(1);
+                r.PrevFrom = r.From.AddHours(-24); r.PrevTo = r.From;
+                break;
+        }
+        r.Period = period;
+        int slots = Slot(r.Unit, r.From, r.To);
+        r.Series = new long[slots];
+        r.SeriesReq = new long[slots];
+        r.SlotStart = new DateTime[slots];
+        for (int i = 0; i < slots; i++)
+            r.SlotStart[i] = r.Unit == "hour" ? r.From.AddHours(i) : r.Unit == "day" ? r.From.AddDays(i) : r.From.AddMonths(i);
+
+        var models = new Dictionary<string, ModelRow>();
+        var prev = new ModelRow(); prev.Model = "";
+        lock (gate) {
+            foreach (var kv in buckets) {
+                string[] k = kv.Key.Split(new char[] { '|' }, 4);
+                if (k.Length < 4) continue;
+                DateTime hour = new DateTime(long.Parse(k[2], CultureInfo.InvariantCulture));
+                Bucket b = kv.Value;
+                if (hour >= r.From && hour < r.To) {
+                    Acc(Row(models, k[3]), b);
+                    int i = Slot(r.Unit, r.From, hour);
+                    r.Series[i] += b.Pp + b.Tg;
+                    r.SeriesReq[i] += b.Req;
+                } else if (hour >= r.PrevFrom && hour < r.PrevTo) {
+                    Acc(prev, b);
+                }
+            }
+        }
+        r.Models = Sorted(models);
+        r.Total = Sum(r.Models);
+        r.Prev = prev;
+        return r;
+    }
+
+    // Which hour, day or month after "from" a time falls in.
+    static int Slot(string unit, DateTime from, DateTime t) {
+        if (unit == "hour") return (int)Math.Round((t - from).TotalHours);
+        if (unit == "day") return (int)Math.Round((t.Date - from).TotalDays);
+        return (t.Year - from.Year) * 12 + t.Month - from.Month;
+    }
+
     // ------------------------------------------------------------- export ----
     // One row per day and model, every log folder combined.
 
-    public int ExportCsv(string path) {
+    public int ExportCsv(string path) { return ExportCsv(path, DateTime.MinValue, DateTime.MaxValue); }
+
+    // Only the hours in [from, to): the Reports tab exports the period it shows.
+    public int ExportCsv(string path, DateTime from, DateTime to) {
         var rows = new SortedDictionary<string, ModelRow>(StringComparer.Ordinal);
         lock (gate) {
             foreach (var kv in buckets) {
                 string[] k = kv.Key.Split(new char[] { '|' }, 4);
                 if (k.Length < 4) continue;
                 DateTime hour = new DateTime(long.Parse(k[2], CultureInfo.InvariantCulture));
+                if (hour < from || hour >= to) continue;
                 string key = hour.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) + "\t" + k[3];
                 ModelRow r;
                 if (!rows.TryGetValue(key, out r)) { r = new ModelRow(); r.Model = k[3]; rows[key] = r; }

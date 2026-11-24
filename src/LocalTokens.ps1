@@ -50,7 +50,10 @@ $win = [Windows.Markup.XamlReader]::Load((New-Object System.Xml.XmlNodeReader $x
 $UI = @{}
 foreach ($n in 'Root', 'Pattern', 'BtnMenu', 'BtnDetails', 'BtnHide', 'BtnExit', 'Dot', 'Status', 'SourceTag', 'Big', 'BigUnit',
                'ModelLine', 'GenLine', 'GenBar', 'CtxLine', 'CtxBar', 'Foot', 'FootRight', 'Details', 'Hourly',
-               'HourStart', 'Totals', 'Models', 'LastLbl', 'LastReq', 'LoadedList', 'SourceList', 'ErrLine', 'Stamp') {
+               'HourStart', 'Totals', 'Models', 'LastLbl', 'LastReq', 'LoadedList', 'SourceList', 'ErrLine', 'Stamp',
+               'TabLive', 'TabLiveText', 'TabLiveLine', 'TabReports', 'TabReportsText', 'TabReportsLine', 'LivePanel',
+               'ReportPanel', 'PeriodBar', 'RpRange', 'RpBig', 'RpDelta', 'RpDeltaPct', 'RpDeltaText', 'RpChartLbl',
+               'RpChart', 'RpAxL', 'RpAxR', 'RpStats', 'RpModels', 'RpExport') {
     $UI[$n] = $win.FindName($n)
 }
 
@@ -67,6 +70,19 @@ function Set-Details([bool]$open) {
     $UI.BtnDetails.Text = [string][char]$(if ($open) { 0x25B4 } else { 0x25BE })
     $script:DetKey = $null
     if ($script:Cfg.details -ne $open) { $script:Cfg.details = $open; Save-Config }
+    Update-View
+}
+
+# Live or Reports. The Details button only applies to Live, so it hides on Reports.
+function Set-Tab([string]$tab) {
+    $rep = $tab -eq 'reports'
+    $UI.LivePanel.Visibility   = $(if ($rep) { 'Collapsed' } else { 'Visible' })
+    $UI.ReportPanel.Visibility = $(if ($rep) { 'Visible' } else { 'Collapsed' })
+    $UI.BtnDetails.Visibility  = $(if ($rep) { 'Collapsed' } else { 'Visible' })
+    $tab = $(if ($rep) { 'reports' } else { 'live' })
+    if ($script:Cfg.tab -ne $tab) { $script:Cfg.tab = $tab; Save-Config }
+    $script:DetKey = $null; $script:RpKey = $null
+    Update-TabStyles
     Update-View
 }
 
@@ -111,6 +127,10 @@ $UI.Root.add_MouseLeftButtonDown({
     try { $win.DragMove(); Save-Position } catch {}
 })
 $UI.BtnDetails.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Set-Details ($UI.Details.Visibility -ne 'Visible') })
+$UI.TabLive.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Set-Tab 'live' })
+$UI.TabReports.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Set-Tab 'reports' })
+$UI.RpExport.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; if ($script:LastReport) { Export-Stats $script:LastReport } })
+Initialize-PeriodBar
 $UI.BtnHide.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; $win.Hide() })
 $UI.BtnExit.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Stop-App })
 $UI.BtnMenu.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true })
@@ -134,6 +154,7 @@ $timer.add_Tick({
         if (Sync-Config) {
             Apply-Window
             Set-Details ([bool]$script:Cfg.details)
+            Set-Tab ([string]$script:Cfg.tab)
             $timer.Interval = [TimeSpan]::FromSeconds([math]::Max(1, [double]$script:Cfg.refreshSeconds))
             Sync-Sources -Now
         } else {
@@ -154,5 +175,6 @@ Start-ApiProbe
 $script:CfgStamp = (Get-Item $script:ConfigPath).LastWriteTimeUtc
 $win.Show()
 Set-Details ([bool]$script:Cfg.details)
+Set-Tab ([string]$script:Cfg.tab)
 $timer.Start()
 [System.Windows.Threading.Dispatcher]::Run()

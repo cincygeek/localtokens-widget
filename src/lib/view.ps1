@@ -188,8 +188,10 @@ function Update-View {
 
     Update-Tray $s $cur $offline
 
+    Update-Report
+
     # --- details (rebuilt only when something in them changed) ---------------
-    if ($UI.Details.Visibility -ne 'Visible') { return }
+    if ($UI.Details.Visibility -ne 'Visible' -or $UI.LivePanel.Visibility -ne 'Visible') { return }
     Set-HourlyBars $s.Hourly
     $key = "$($s.Today.Tokens)|$($s.AllTime.Req)|$(if ($s.Last) { $s.Last.At.Ticks })|$apiFresh|" +
            "$(@($script:Loaded | ForEach-Object { $_.id }) -join ',')|$((Get-Date).Date.Ticks)"
@@ -244,5 +246,174 @@ function Update-View {
                    elseif ($src.LastSeen -gt [datetime]::MinValue) { "$(Format-Since $src.LastSeen) ago" } else { 'empty' })
         $color = $(if ($src.Name -eq $s.ActiveSource -and $src.Exists) { $Colors.text2 } else { $Colors.muted })
         [void]$UI.SourceList.Children.Add((New-Row "$($src.Name)  ·  $($src.Requests) req" $right $color $src.Dir))
+    }
+}
+
+# --------------------------------------------------------------- reports ----
+# The Reports tab: totals for one period, built from the reader's hourly buckets.
+
+$Periods = [ordered]@{ '24h' = '24h'; today = 'Today'; week = 'Week'; month = 'Month'; year = 'Year' }
+$PeriodVs = @{ '24h' = 'previous 24 hours'; today = 'yesterday by this hour'; week = 'previous 7 days'
+               month = 'previous 30 days'; year = 'previous 12 months' }
+$script:RpKey = $null
+
+function Format-Duration([double]$ms) {
+    $m = [math]::Round($ms / 60000)
+    if ($m -ge 60) { return '{0}h {1:00}m' -f [math]::Floor($m / 60), ($m % 60) }
+    if ($m -ge 1) { return "${m}m" }
+    return '{0:0}s' -f ($ms / 1000)
+}
+
+function Get-ReportPeriod {
+    $p = ([string]$script:Cfg.reportPeriod).ToLower()
+    if (-not $Periods.Contains($p)) { $p = '24h' }
+    return $p
+}
+
+# Colour an element from the window's theme brushes, so a theme change recolours it.
+function Set-Res($el, $prop, [string]$key) { $el.SetResourceReference($prop, $key) }
+
+# The 24h | Today | Week | Month | Year buttons, made once.
+function Initialize-PeriodBar {
+    foreach ($id in $Periods.Keys) {
+        $b = New-Object System.Windows.Controls.Border
+        $b.CornerRadius = 4; $b.Padding = '0,3,0,4'; $b.Cursor = 'Hand'; $b.Tag = $id
+        $b.Background = [System.Windows.Media.Brushes]::Transparent
+        $t = New-Object System.Windows.Controls.TextBlock
+        $t.Text = $Periods[$id]; $t.FontFamily = 'Segoe UI'; $t.FontSize = 10; $t.FontWeight = 'Medium'
+        $t.HorizontalAlignment = 'Center'
+        $b.Child = $t
+        $b.add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true; Set-ReportPeriod ([string]$s.Tag) })
+        [void]$UI.PeriodBar.Children.Add($b)
+    }
+}
+
+function Set-ReportPeriod([string]$p) {
+    if ($script:Cfg.reportPeriod -ne $p) { $script:Cfg.reportPeriod = $p; Save-Config }
+    $script:RpKey = $null
+    Update-Report
+}
+
+# Tab and period buttons: the chosen one bright, the others muted.
+function Update-TabStyles {
+    $rep = $UI.ReportPanel.Visibility -eq 'Visible'
+    $fg = [System.Windows.Controls.TextBlock]::ForegroundProperty
+    $bg = [System.Windows.Controls.Border]::BackgroundProperty
+    Set-Res $UI.TabLiveText $fg $(if ($rep) { 'Muted' } else { 'TextHi' })
+    Set-Res $UI.TabReportsText $fg $(if ($rep) { 'TextHi' } else { 'Muted' })
+    if ($rep) { $UI.TabLiveLine.Background = $null; Set-Res $UI.TabReportsLine $bg 'Accent' }
+    else { Set-Res $UI.TabLiveLine $bg 'Accent'; $UI.TabReportsLine.Background = $null }
+    $cur = Get-ReportPeriod
+    foreach ($b in $UI.PeriodBar.Children) {
+        if ([string]$b.Tag -eq $cur) { Set-Res $b $bg 'Bg'; Set-Res $b.Child $fg 'TextHi' }
+        else { $b.Background = [System.Windows.Media.Brushes]::Transparent; Set-Res $b.Child $fg 'Muted' }
+    }
+}
+
+# One "value over caption" cell of the totals grid.
+function New-Stat([string]$value, [string]$label, [string]$color = $Colors.text2, [string]$tip = $null) {
+    $p = New-Object System.Windows.Controls.StackPanel
+    $p.Margin = '0,0,8,6'
+    $v = New-Object System.Windows.Controls.TextBlock
+    $v.Text = $value; $v.FontFamily = 'Segoe UI'; $v.FontSize = 13; $v.Foreground = Get-Brush $color
+    $k = New-Object System.Windows.Controls.TextBlock
+    $k.Text = $label; $k.FontFamily = 'Segoe UI'; $k.FontSize = 9; $k.Foreground = Get-Brush $Colors.dim
+    [void]$p.Children.Add($v); [void]$p.Children.Add($k)
+    if ($tip) { $p.ToolTip = $tip; $p.Background = [System.Windows.Media.Brushes]::Transparent }
+    return $p
+}
+
+function Get-ReportRange($r) {
+    $inv = [Globalization.CultureInfo]::InvariantCulture
+    switch ($r.Period) {
+        'today' { return 'Today, ' + $r.From.ToString('ddd MMM d', $inv) }
+        'year'  { return $r.From.ToString('MMM yyyy', $inv) + ' – ' + $r.To.AddMonths(-1).ToString('MMM yyyy', $inv) }
+        '24h'   { return 'Last 24 hours, since ' + $r.From.ToString('ddd ', $inv) + $r.From.ToString('h tt', $inv).ToLower() }
+        default { return $r.From.ToString('MMM d', $inv) + ' – ' + $r.To.AddDays(-1).ToString('MMM d', $inv) }
+    }
+}
+
+function Set-ReportChart($r) {
+    $UI.RpChart.Children.Clear()
+    $inv = [Globalization.CultureInfo]::InvariantCulture
+    $n = $r.Series.Length
+    $max = 0; foreach ($v in $r.Series) { if ($v -gt $max) { $max = $v } }
+    $gap = $(if ($n -gt 24) { 1.5 } else { 2 })
+    $w = ($BarWidth - ($n - 1) * $gap) / $n
+    for ($i = 0; $i -lt $n; $i++) {
+        $rect = New-Object System.Windows.Shapes.Rectangle
+        $h = $(if ($max -gt 0) { [math]::Max(1.5, 40.0 * $r.Series[$i] / $max) } else { 1.5 })
+        $rect.Width = $w; $rect.Height = $h; $rect.RadiusX = 1; $rect.RadiusY = 1
+        $rect.Fill = Get-Brush $(if ($i -eq $n - 1) { $Colors.accent } else { $Colors.accentDim })
+        [System.Windows.Controls.Canvas]::SetLeft($rect, $i * ($w + $gap))
+        [System.Windows.Controls.Canvas]::SetTop($rect, 42 - $h)
+        $at = $r.SlotStart[$i]
+        $label = switch ($r.Unit) { 'hour' { $at.ToString('ddd h tt', $inv) } 'day' { $at.ToString('ddd MMM d', $inv) } default { $at.ToString('MMMM yyyy', $inv) } }
+        $rect.ToolTip = "$label  ·  $(Format-Tok $r.Series[$i]) tokens  ·  $($r.SeriesReq[$i]) req"
+        [void]$UI.RpChart.Children.Add($rect)
+    }
+    switch ($r.Unit) {
+        'hour'  { $UI.RpChartLbl.Text = 'BY HOUR'; $UI.RpAxL.Text = $r.From.ToString('h tt', $inv).ToLower(); $UI.RpAxR.Text = 'now' }
+        'day'   { $UI.RpChartLbl.Text = 'BY DAY'; $UI.RpAxL.Text = $r.From.ToString('MMM d', $inv); $UI.RpAxR.Text = 'today' }
+        default { $UI.RpChartLbl.Text = 'BY MONTH'; $UI.RpAxL.Text = $r.From.ToString('MMM', $inv); $UI.RpAxR.Text = $r.SlotStart[$n - 1].ToString('MMM', $inv) }
+    }
+}
+
+function Update-Report {
+    if ($UI.ReportPanel.Visibility -ne 'Visible' -or -not $script:Reader) { return }
+    $p = Get-ReportPeriod
+    $r = $script:Reader.GetReport($p)
+    $t = $r.Total
+    $key = "$p|$($t.Tokens)|$($t.Req)|$($t.Err)|$($r.Prev.Tokens)|$($r.To.Ticks)"
+    if ($key -eq $script:RpKey) { return }
+    $script:RpKey = $key
+    $script:LastReport = $r
+    Update-TabStyles
+
+    $UI.RpRange.Text = Get-ReportRange $r
+    $UI.RpBig.Text = Format-Tok $t.Tokens
+
+    # change against the period before
+    $prev = $r.Prev
+    if ($prev.Tokens -gt 0) {
+        $ch = 100.0 * ($t.Tokens - $prev.Tokens) / $prev.Tokens
+        $UI.RpDeltaPct.Text = '{0} {1:0}%' -f $(if ($ch -ge 0) { [char]0x25B2 } else { [char]0x25BC }), [math]::Abs($ch)
+        $UI.RpDeltaPct.Foreground = Get-Brush $(if ($ch -ge 0) { $Colors.ok } else { $Colors.crit })
+        $UI.RpDeltaText.Text = "vs $($PeriodVs[$p])"
+        $UI.RpDeltaPct.Visibility = 'Visible'
+    } else {
+        $UI.RpDeltaPct.Visibility = 'Collapsed'
+        $UI.RpDeltaText.Text = $(if ($p -eq 'today') { 'nothing by this hour yesterday' } else { "nothing in the $($PeriodVs[$p])" })
+    }
+    $UI.RpDelta.ToolTip = "Before: $(Format-Tok $prev.Tokens) tokens  ·  $($prev.Req) requests`n" +
+                          "$($r.PrevFrom.ToString('g')) – $($r.PrevTo.ToString('g'))"
+
+    Set-ReportChart $r
+
+    $UI.RpStats.Children.Clear()
+    [void]$UI.RpStats.Children.Add((New-Stat (Format-Tok $t.Pp) 'prompt tokens' $Colors.text2 "$($t.Pp.ToString('N0')) prompt tokens processed"))
+    [void]$UI.RpStats.Children.Add((New-Stat (Format-Tok $t.Tg) 'generated tokens' $Colors.text2 "$($t.Tg.ToString('N0')) tokens generated"))
+    [void]$UI.RpStats.Children.Add((New-Stat $t.Req.ToString('N0') 'requests'))
+    [void]$UI.RpStats.Children.Add((New-Stat ('{0:0}%' -f $t.CachePct) 'prompt cached' $Colors.text2 "$(Format-Tok $t.Cached) prompt tokens reused from the cache"))
+    [void]$UI.RpStats.Children.Add((New-Stat ('{0:0.0} tok/s' -f $t.GenTps) 'avg gen speed'))
+    [void]$UI.RpStats.Children.Add((New-Stat ('{0:N0} tok/s' -f $t.PromptTps) 'avg prompt speed'))
+    [void]$UI.RpStats.Children.Add((New-Stat (Format-Duration ($t.PpMs + $t.TgMs)) 'time working' $Colors.text2 'Time spent reading prompts and generating'))
+    [void]$UI.RpStats.Children.Add((New-Stat $t.Err.ToString('N0') 'errors' $(if ($t.Err -gt 0) { $Colors.crit } else { $Colors.text2 })))
+
+    $UI.RpModels.Children.Clear()
+    $rows = @($r.Models | Select-Object -First ([math]::Max(3, [int]$script:Cfg.topModels + 2)))
+    if (-not $rows.Count) { [void]$UI.RpModels.Children.Add((New-Row 'nothing in this period' '' $Colors.muted)) }
+    $top = $(if ($rows.Count) { [math]::Max(1, $rows[0].Tokens) } else { 1 })
+    foreach ($m in $rows) {
+        $tip = "$($m.Model)`n$($m.Req) requests  ·  $(Format-Tok $m.Pp) prompt  ·  $(Format-Tok $m.Tg) generated`ngen {0:0.0} tok/s  ·  prompt {1:0} tok/s  ·  {2:0}% cached" -f $m.GenTps, $m.PromptTps, $m.CachePct
+        [void]$UI.RpModels.Children.Add((New-Row (Get-ShortModel $m.Model) ('{0}  ·  {1} req' -f (Format-Tok $m.Tokens), $m.Req) $Colors.text2 $tip))
+        $track = New-Object System.Windows.Controls.Border
+        $track.Height = 3; $track.CornerRadius = 1.5; $track.Margin = '0,1,0,5'
+        Set-Res $track ([System.Windows.Controls.Border]::BackgroundProperty) 'Track'
+        $fill = New-Object System.Windows.Controls.Border
+        $fill.HorizontalAlignment = 'Left'; $fill.CornerRadius = 1.5; $fill.Background = Get-Brush $Colors.accent
+        $fill.Width = [math]::Max(1.0, $BarWidth * $m.Tokens / $top)
+        $track.Child = $fill
+        [void]$UI.RpModels.Children.Add($track)
     }
 }

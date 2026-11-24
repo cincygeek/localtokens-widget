@@ -1,0 +1,236 @@
+<!doctype html>
+<!-- Mockup only: the proposed Reports tab for the LocalTokens widget.
+     Uses the Classic theme colours from src/window.xaml and fake, seeded data. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LocalTokens · Reports mockup</title>
+<style>
+  :root {
+    --bg:#15171C; --border:rgba(255,255,255,.2); --line:rgba(255,255,255,.12); --track:rgba(255,255,255,.15);
+    --textHi:#F4F4F5; --text2:#D4D4D8; --muted:#8B8B94; --dim:#71717A; --accent:#2DD4BF;
+    --accentDim:rgba(45,212,191,.5); --ok:#4ADE80; --warn:#FBBF24; --crit:#F87171;
+  }
+  body { margin:0; min-height:100vh; display:flex; gap:40px; align-items:flex-start; justify-content:center;
+         padding:40px 20px; box-sizing:border-box; background:#3a3f4a radial-gradient(circle at 30% 20%,#4b5260,#2a2e36);
+         font-family:"Segoe UI",system-ui,sans-serif; }
+  .note { max-width:300px; color:#e4e4e7; font-size:13px; line-height:1.5; }
+  .note h1 { font-size:16px; margin:0 0 8px; }
+  .note code { background:rgba(0,0,0,.3); padding:1px 4px; border-radius:3px; }
+  .note li { margin-bottom:4px; }
+
+  .win { width:238px; padding:10px 12px 11px; background:var(--bg); border:1px solid var(--border); border-radius:10px;
+         box-shadow:0 2px 14px rgba(0,0,0,.55); user-select:none; }
+  .hdr { display:flex; align-items:center; margin-bottom:8px; }
+  .brand { font-size:9.5px; font-weight:600; color:var(--muted); letter-spacing:.02em; }
+  .btns { margin-left:auto; display:flex; gap:10px; color:var(--muted); font-size:11px; }
+  .btns span { cursor:pointer; } .btns span:hover { color:var(--textHi); }
+
+  /* Live | Reports tabs */
+  .tabs { display:flex; gap:14px; border-bottom:1px solid var(--line); margin-bottom:9px; }
+  .tab { font-size:10.5px; color:var(--muted); padding:0 0 5px; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-1px; }
+  .tab.on { color:var(--textHi); border-color:var(--accent); }
+
+  /* period picker */
+  .seg { display:flex; background:var(--track); border-radius:6px; padding:2px; margin-bottom:10px; }
+  .seg button { flex:1; border:0; background:none; color:var(--muted); font:500 10px "Segoe UI"; padding:3px 0;
+                border-radius:4px; cursor:pointer; }
+  .seg button:hover { color:var(--textHi); }
+  .seg button.on { background:var(--bg); color:var(--textHi); box-shadow:0 0 0 1px var(--line); }
+
+  .range { font-size:9.5px; color:var(--dim); margin-bottom:2px; }
+  .big { display:flex; align-items:baseline; gap:5px; }
+  .big b { font-size:30px; font-weight:300; color:var(--textHi); line-height:1.1; }
+  .big span { font-size:11px; color:var(--muted); }
+  .delta { font-size:10px; margin:0 0 9px; color:var(--muted); }
+  .up { color:var(--ok); } .down { color:var(--crit); }
+
+  .lbl { font-size:9px; font-weight:600; color:var(--dim); margin:0 0 4px; letter-spacing:.02em; }
+  .chart { height:42px; display:flex; align-items:flex-end; gap:2px; }
+  .chart i { flex:1; background:var(--accentDim); border-radius:1px; min-height:1.5px; position:relative; }
+  .chart i:last-child { background:var(--accent); }
+  .chart i:hover { background:var(--textHi); }
+  .axis { display:flex; justify-content:space-between; font-size:9px; color:var(--dim); margin:1px 0 10px; }
+  hr { border:0; border-top:1px solid var(--line); margin:0 0 8px; }
+
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 10px; margin-bottom:10px; }
+  .stat .v { font-size:13px; color:var(--text2); }
+  .stat .k { font-size:9px; color:var(--dim); }
+
+  .row { display:flex; font-size:10.5px; color:var(--text2); margin-bottom:2px; }
+  .row .r { margin-left:auto; font-size:10px; color:var(--muted); padding-left:8px; white-space:nowrap; }
+  .row .l { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mbar { height:3px; background:var(--track); border-radius:2px; margin:1px 0 5px; }
+  .mbar div { height:100%; background:var(--accent); border-radius:2px; opacity:.75; }
+
+  .foot { display:flex; margin-top:9px; font-size:9px; color:var(--dim); }
+  .foot a { margin-left:auto; color:var(--muted); text-decoration:none; cursor:pointer; }
+  .foot a:hover { color:var(--textHi); }
+  .tip { position:fixed; pointer-events:none; background:#000; color:#fff; font-size:10px; padding:3px 6px;
+         border-radius:3px; display:none; white-space:nowrap; }
+</style>
+</head>
+<body>
+
+<div class="win">
+  <div class="hdr">
+    <div class="brand">LOCALTOKENS</div>
+    <div class="btns"><span title="Settings">⚙</span><span title="Details">▾</span><span>–</span><span>✕</span></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab">Live</div>
+    <div class="tab on">Reports</div>
+  </div>
+
+  <div class="seg" id="seg">
+    <button data-p="24h" class="on">24h</button>
+    <button data-p="day">Today</button>
+    <button data-p="week">Week</button>
+    <button data-p="month">Month</button>
+    <button data-p="year">Year</button>
+  </div>
+
+  <div class="range" id="range"></div>
+  <div class="big"><b id="total">--</b><span>tokens</span></div>
+  <div class="delta" id="delta"></div>
+
+  <div class="lbl" id="chartLbl">BY HOUR</div>
+  <div class="chart" id="chart"></div>
+  <div class="axis"><span id="axL"></span><span id="axR"></span></div>
+
+  <hr>
+  <div class="lbl">TOTALS</div>
+  <div class="grid">
+    <div class="stat"><div class="v" id="pp"></div><div class="k">prompt tokens</div></div>
+    <div class="stat"><div class="v" id="tg"></div><div class="k">generated tokens</div></div>
+    <div class="stat"><div class="v" id="req"></div><div class="k">requests</div></div>
+    <div class="stat"><div class="v" id="cache"></div><div class="k">prompt cached</div></div>
+    <div class="stat"><div class="v" id="gen"></div><div class="k">avg gen speed</div></div>
+    <div class="stat"><div class="v" id="pps"></div><div class="k">avg prompt speed</div></div>
+    <div class="stat"><div class="v" id="busy"></div><div class="k">time generating</div></div>
+    <div class="stat"><div class="v" id="err"></div><div class="k">errors</div></div>
+  </div>
+
+  <hr>
+  <div class="lbl">BY MODEL</div>
+  <div id="models"></div>
+
+  <div class="foot"><span id="stamp"></span><a title="Save this period as CSV">Export CSV</a></div>
+</div>
+
+<div class="note">
+  <h1>Reports tab — mockup</h1>
+  <p>Click the period buttons; every number on the tab recomputes from the same (fake) per-bucket data, so totals always add up.</p>
+  <ul>
+    <li><b>Tabs:</b> <code>Live</code> is today's widget, unchanged. <code>Reports</code> swaps the body.</li>
+    <li><b>24h</b> = rolling last 24 hours. <b>Today</b> = since midnight.</li>
+    <li><b>Week / Month / Year</b> = rolling 7 / 30 / 365 days, with a change vs the previous period.</li>
+    <li>Chart granularity follows the period: hours → days → months.</li>
+    <li>Hover a bar for its value.</li>
+  </ul>
+</div>
+
+<div class="tip" id="tip"></div>
+
+<script>
+// Seeded random so the mockup looks the same on every load.
+let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const MODELS = [["qwen3-coder-30b", .46], ["glm-4.7-flash", .31], ["gemma-3-27b-it", .15], ["llama-3.2-3b", .08]];
+const now = new Date(2026, 10, 23, 14, 20);
+
+// One bucket = what LogReader's ModelRow holds for that slice of time.
+function bucket(scale) {
+  const idle = rnd() < .2 ? .05 : 1;
+  const req = Math.round((4 + rnd() * 30) * scale * idle);
+  const pp = Math.round(req * (2500 + rnd() * 4000)), tg = Math.round(req * (300 + rnd() * 500));
+  return { req, pp, tg, cached: Math.round(pp * (.35 + rnd() * .3)),
+           tgMs: tg / (38 + rnd() * 20) * 1000, ppMs: pp / (900 + rnd() * 600) * 1000,
+           err: rnd() < .08 * scale ? Math.ceil(rnd() * 2) : 0 };
+}
+const series = (n, scale) => Array.from({ length: n }, () => bucket(scale));
+
+const fmtH = d => d.toLocaleTimeString("en-US", { hour: "numeric" }).replace(" ", "").toLowerCase();
+const fmtD = d => d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+const addH = h => new Date(now.getTime() + h * 36e5), addD = d => new Date(now.getTime() + d * 864e5);
+
+const P = {
+  "24h":  { lbl: "BY HOUR",  cur: series(24, 1),  prev: series(24, 1),
+            range: () => `${fmtD(addH(-23))}, ${fmtH(addH(-23))} – now`, ax: [fmtH(addH(-23)), "now"],
+            name: i => fmtH(addH(i - 23)), vs: "previous 24h" },
+  day:    { lbl: "BY HOUR",  cur: series(15, 1),  prev: series(24, 1),
+            range: () => `Today, ${fmtD(now)}`, ax: ["12am", "now"],
+            name: i => fmtH(new Date(2026, 10, 23, i)), vs: "yesterday" },
+  week:   { lbl: "BY DAY",   cur: series(7, 20),  prev: series(7, 20),
+            range: () => `${fmtD(addD(-6))} – ${fmtD(now)}`, ax: [fmtD(addD(-6)), "today"],
+            name: i => addD(i - 6).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" }), vs: "previous week" },
+  month:  { lbl: "BY DAY",   cur: series(30, 20), prev: series(30, 18),
+            range: () => `${fmtD(addD(-29))} – ${fmtD(now)}`, ax: [fmtD(addD(-29)), "today"],
+            name: i => fmtD(addD(i - 29)), vs: "previous 30 days" },
+  year:   { lbl: "BY MONTH", cur: series(12, 550), prev: series(12, 420),
+            range: () => `Dec 2025 – Nov 2026`, ax: ["Dec", "Nov"],
+            name: i => new Date(2025, 11 + i, 1).toLocaleDateString("en-US", { month: "short", year: "numeric" }), vs: "previous year" },
+};
+
+function sum(list) {
+  const t = { req: 0, pp: 0, tg: 0, cached: 0, tgMs: 0, ppMs: 0, err: 0 };
+  for (const b of list) for (const k in t) t[k] += b[k];
+  return t;
+}
+// Same rules as Format-Tok in src/lib/view.ps1.
+function tok(n) {
+  if (n >= 1e9) return +(n / 1e9).toFixed(2) + "B";
+  if (n >= 1e6) return +(n / 1e6).toFixed(2) + "M";
+  if (n >= 1e5) return Math.round(n / 1e3) + "k";
+  if (n >= 1e3) return +(n / 1e3).toFixed(1) + "k";
+  return String(Math.round(n));
+}
+function dur(ms) {
+  const m = Math.round(ms / 6e4);
+  return m >= 60 ? `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m` : `${m}m`;
+}
+const $ = id => document.getElementById(id);
+
+function show(p) {
+  const d = P[p], t = sum(d.cur), pv = sum(d.prev), total = t.pp + t.tg, ptotal = pv.pp + pv.tg;
+  $("range").textContent = d.range();
+  $("total").textContent = tok(total);
+  const ch = (total - ptotal) / ptotal * 100;
+  $("delta").innerHTML = `<span class="${ch >= 0 ? "up" : "down"}">${ch >= 0 ? "▲" : "▼"} ${Math.abs(ch).toFixed(0)}%</span> vs ${d.vs}`;
+
+  $("chartLbl").textContent = d.lbl;
+  const max = Math.max(...d.cur.map(b => b.pp + b.tg));
+  $("chart").innerHTML = d.cur.map((b, i) =>
+    `<i style="height:${Math.max(1.5, 40 * (b.pp + b.tg) / max)}px" data-t="${d.name(i)}  ·  ${tok(b.pp + b.tg)} tokens  ·  ${b.req} req"></i>`).join("");
+  [$("axL").textContent, $("axR").textContent] = d.ax;
+
+  $("pp").textContent = tok(t.pp);
+  $("tg").textContent = tok(t.tg);
+  $("req").textContent = t.req.toLocaleString();
+  $("cache").textContent = (100 * t.cached / (t.pp + t.cached)).toFixed(0) + "%";
+  $("gen").textContent = (t.tg / (t.tgMs / 1000)).toFixed(1) + " tok/s";
+  $("pps").textContent = Math.round(t.pp / (t.ppMs / 1000)).toLocaleString() + " tok/s";
+  $("busy").textContent = dur(t.tgMs + t.ppMs);
+  $("err").innerHTML = t.err ? `<span style="color:var(--crit)">${t.err}</span>` : "0";
+
+  $("models").innerHTML = MODELS.map(([m, share]) => {
+    const n = total * share;
+    return `<div class="row"><span class="l">${m}</span><span class="r">${tok(n)} · ${Math.round(t.req * share)} req</span></div>
+            <div class="mbar"><div style="width:${share / MODELS[0][1] * 100}%"></div></div>`;
+  }).join("");
+  $("stamp").textContent = "updated 2:20:14 pm";
+  document.querySelectorAll("#seg button").forEach(b => b.classList.toggle("on", b.dataset.p === p));
+}
+
+$("seg").onclick = e => e.target.dataset.p && show(e.target.dataset.p);
+const tip = $("tip");
+$("chart").onmousemove = e => {
+  const t = e.target.dataset.t;
+  tip.style.display = t ? "block" : "none";
+  if (t) { tip.textContent = t; tip.style.left = e.clientX + 12 + "px"; tip.style.top = e.clientY + 12 + "px"; }
+};
+$("chart").onmouseleave = () => tip.style.display = "none";
+show("24h");
+</script>
+</body>
+</html>

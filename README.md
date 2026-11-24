@@ -68,6 +68,12 @@ The **▾** button opens the details:
 - what's loaded right now
 - the log folders being read
 
+The **Reports** tab shows totals for a period you pick: **24h** (rolling), **Today** (since
+midnight), **Week** (7 days), **Month** (30 days) or **Year** (12 months). For each: total
+tokens and the change from the period before, a chart by hour, day or month, prompt and
+generated tokens, requests, cache share, average speeds, time spent working, errors, and
+the models used. **Export this period to CSV** saves just those days.
+
 **Tray icon:** the number is the current generation speed. The colour shows what the
 server is doing: teal is generating, amber is reading a prompt, grey is idle. Left-click
 shows or hides the window; right-click opens the menu.
@@ -124,6 +130,8 @@ within a couple of seconds, without a restart. The common ones are also in the t
 | `theme` | `auto` | `auto`, `classic`, `oled`, `midnight`, `mocha`, `forest`, `paper`, `halloween`, `space`, `ocean`, `cyberpunk` |
 | `accent` | `""` | Your own accent colour, `#RRGGBB` |
 | `warnPercent` / `critPercent` | `60` / `85` | Context use that turns the bar yellow / red |
+| `tab` | `live` | The open tab: `live` or `reports` |
+| `reportPeriod` | `24h` | Reports period: `24h`, `today`, `week`, `month`, `year` |
 | `details`, `topmost`, `opacity`, `scale` | | Window options |
 
 ## Files it writes

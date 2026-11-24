@@ -150,15 +150,18 @@ $notify.add_MouseClick({
     if ($e.Button -eq [System.Windows.Forms.MouseButtons]::Left) { Switch-Window }
 })
 
-function Export-Stats {
+# Everything, or with a report only the hours of its period (the Reports tab's link).
+function Export-Stats($report = $null) {
     $dlg = New-Object System.Windows.Forms.SaveFileDialog
     $dlg.Title = 'Export LocalTokens stats'
     $dlg.Filter = 'CSV file (*.csv)|*.csv'
-    $dlg.FileName = "localtokens-$(Get-Date -Format 'yyyy-MM-dd').csv"
+    $suffix = $(if ($report) { "-$($report.Period)" } else { '' })
+    $dlg.FileName = "localtokens-$(Get-Date -Format 'yyyy-MM-dd')$suffix.csv"
     $dlg.InitialDirectory = [Environment]::GetFolderPath('MyDocuments')
     if ($dlg.ShowDialog() -ne 'OK') { return }
     try {
-        $n = $script:Reader.ExportCsv($dlg.FileName)
+        $n = $(if ($report) { $script:Reader.ExportCsv($dlg.FileName, $report.From, $report.To) }
+               else { $script:Reader.ExportCsv($dlg.FileName) })
         $notify.ShowBalloonTip(5000, 'LocalTokens', "Exported $n rows (one per day and model).", 'Info')
     } catch {
         [void][System.Windows.Forms.MessageBox]::Show("Export failed: $($_.Exception.Message)", 'LocalTokens', 'OK', 'Error')
