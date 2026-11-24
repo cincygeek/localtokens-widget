@@ -1,3 +1,5 @@
 dist/
 *.log
 !tests/fixtures/**/*.log
+# release zips belong on the Releases page, not in git
+/*.zip

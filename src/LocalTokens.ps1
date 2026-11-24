@@ -12,7 +12,7 @@ Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Windows.Forms
 
-$AppVersion = '0.1.0'
+$AppVersion = '0.2.0'
 $script:SrcRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $script:AppRoot = Split-Path -Parent $script:SrcRoot
 
