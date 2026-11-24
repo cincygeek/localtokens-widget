@@ -124,6 +124,14 @@ try {
     Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
 }
 
+Write-Host 'Checking model labels'
+# view.ps1 only defines data and functions at load.
+. (Join-Path $root 'src\lib\view.ps1')
+$lab = Get-ModelLabels @('qwen/qwen3.5-9b', 'lmstudio-community/qwen3.5-9b', 'zai-org/glm-4.7-flash')
+Check 'label clash kept whole'  $lab['qwen/qwen3.5-9b'] 'qwen/qwen3.5-9b'
+Check 'label clash other'       $lab['lmstudio-community/qwen3.5-9b'] 'lmstudio-community/qwen3.5-9b'
+Check 'label unique shortened'  $lab['zai-org/glm-4.7-flash'] 'glm-4.7-flash'
+
 Write-Host 'Checking themes'
 # theme.ps1 only defines data and functions at load; the WPF parts run in Set-Theme.
 . (Join-Path $root 'src\lib\theme.ps1')

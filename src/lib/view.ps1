@@ -43,6 +43,19 @@ function Get-ShortModel([string]$id) {
     return $id
 }
 
+# Short names for a list of models, keeping the publisher where two would read the same:
+# "qwen/qwen3.5-9b" and "lmstudio-community/qwen3.5-9b" both shorten to "qwen3.5-9b".
+function Get-ModelLabels([string[]]$ids) {
+    $count = @{}
+    foreach ($id in $ids) { $n = (Get-ShortModel $id).ToLower(); $count[$n] = 1 + [int]$count[$n] }
+    $labels = @{}
+    foreach ($id in $ids) {
+        $short = Get-ShortModel $id
+        $labels[$id] = $(if ($count[$short.ToLower()] -gt 1) { $id } else { $short })
+    }
+    return $labels
+}
+
 function Get-CtxLevel([double]$pct) {
     if ($pct -ge [double]$script:Cfg.critPercent) { return 'crit' }
     if ($pct -ge [double]$script:Cfg.warnPercent) { return 'warn' }
@@ -208,11 +221,12 @@ function Update-View {
     [void]$UI.Totals.Children.Add((New-Row $(if ($since) { "Since $since" } else { 'All time' }) ('{0}  ·  {1} req' -f (Format-Tok $s.AllTime.Tokens), $s.AllTime.Req) $Colors.text2 $allTip))
 
     $UI.Models.Children.Clear()
-    $rows = @($s.TodayModels | Select-Object -First ([int]$script:Cfg.topModels))
+    $rows = @($s.TodayModels | Where-Object { $_.Req -gt 0 } | Select-Object -First ([int]$script:Cfg.topModels))
+    $labels = Get-ModelLabels @($s.TodayModels | ForEach-Object { $_.Model })
     if (-not $rows.Count) { [void]$UI.Models.Children.Add((New-Row 'nothing yet today' '' $Colors.muted)) }
     foreach ($r in $rows) {
         $tip = "$($r.Model)`n$($r.Req) requests  ·  $(Format-Tok $r.Pp) prompt  ·  $(Format-Tok $r.Tg) generated`nprompt {0:0} tok/s  ·  {1:0}% cached" -f $r.PromptTps, $r.CachePct
-        [void]$UI.Models.Children.Add((New-Row (Get-ShortModel $r.Model) ('{0}  ·  {1:0} tok/s' -f (Format-Tok $r.Tokens), $r.GenTps) $Colors.text2 $tip))
+        [void]$UI.Models.Children.Add((New-Row $labels[$r.Model] ('{0}  ·  {1:0} tok/s' -f (Format-Tok $r.Tokens), $r.GenTps) $Colors.text2 $tip))
     }
 
     $UI.LastReq.Children.Clear()
@@ -401,12 +415,14 @@ function Update-Report {
     [void]$UI.RpStats.Children.Add((New-Stat $t.Err.ToString('N0') 'errors' $(if ($t.Err -gt 0) { $Colors.crit } else { $Colors.text2 })))
 
     $UI.RpModels.Children.Clear()
-    $rows = @($r.Models | Select-Object -First ([math]::Max(3, [int]$script:Cfg.topModels + 2)))
+    # A model that only logged errors has no requests: its errors count in TOTALS, not here.
+    $rows = @($r.Models | Where-Object { $_.Req -gt 0 } | Select-Object -First ([math]::Max(3, [int]$script:Cfg.topModels + 2)))
+    $labels = Get-ModelLabels @($r.Models | ForEach-Object { $_.Model })
     if (-not $rows.Count) { [void]$UI.RpModels.Children.Add((New-Row 'nothing in this period' '' $Colors.muted)) }
     $top = $(if ($rows.Count) { [math]::Max(1, $rows[0].Tokens) } else { 1 })
     foreach ($m in $rows) {
         $tip = "$($m.Model)`n$($m.Req) requests  ·  $(Format-Tok $m.Pp) prompt  ·  $(Format-Tok $m.Tg) generated`ngen {0:0.0} tok/s  ·  prompt {1:0} tok/s  ·  {2:0}% cached" -f $m.GenTps, $m.PromptTps, $m.CachePct
-        [void]$UI.RpModels.Children.Add((New-Row (Get-ShortModel $m.Model) ('{0}  ·  {1} req' -f (Format-Tok $m.Tokens), $m.Req) $Colors.text2 $tip))
+        [void]$UI.RpModels.Children.Add((New-Row $labels[$m.Model] ('{0}  ·  {1} req' -f (Format-Tok $m.Tokens), $m.Req) $Colors.text2 $tip))
         $track = New-Object System.Windows.Controls.Border
         $track.Height = 3; $track.CornerRadius = 1.5; $track.Margin = '0,1,0,5'
         Set-Res $track ([System.Windows.Controls.Border]::BackgroundProperty) 'Track'
