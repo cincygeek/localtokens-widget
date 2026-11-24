@@ -36,7 +36,7 @@ process: this session, today, this week and all time, per model, and how fast th
 
 ## Install
 
-1. Download `LocalTokens-x.y.z.zip` from [Releases](http://100.71.225.20:3000/joshua.combs/localtokens-widget/releases).
+1. Download `LocalTokens-x.y.z.zip` from [Releases](../../releases).
 2. Right-click the zip → **Properties** → tick **Unblock** → **OK**. Otherwise Windows
    asks for confirmation every time it starts.
 3. Unzip it anywhere you like, for example `Documents\LocalTokens`.
