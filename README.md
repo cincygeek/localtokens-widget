@@ -9,7 +9,7 @@
 and tray icon for Windows. It shows how many tokens your models in [LM Studio](https://lmstudio.ai)
 process: this session, today, this week and all time, per model, and how fast they run.
 
-![LocalTokens](docs/screenshot.png)
+![LocalTokens](docs/screenshots/live.png)
 
 - **Live.** It shows whether a model is reading a prompt or generating, with tokens per
   second as it happens. The tray icon shows the speed too.
@@ -73,6 +73,15 @@ midnight), **Week** (7 days), **Month** (30 days) or **Year** (12 months). For e
 tokens and the change from the period before, a chart by hour, day or month, prompt and
 generated tokens, requests, cache share, average speeds, time spent working, errors, and
 the models used. **Export this period to CSV** saves just those days.
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/live-details.png" alt="Live tab with the details open" width="200"><br>Live, details open</td>
+    <td align="center"><img src="docs/screenshots/reports-week.png" alt="Reports tab, last 7 days" width="200"><br>Reports: Week</td>
+    <td align="center"><img src="docs/screenshots/reports-month.png" alt="Reports tab, last 30 days" width="200"><br>Reports: Month</td>
+    <td align="center"><img src="docs/screenshots/reports-year.png" alt="Reports tab, last 12 months" width="200"><br>Reports: Year</td>
+  </tr>
+</table>
 
 **Tray icon:** the number is the current generation speed. The colour shows what the
 server is doing: teal is generating, amber is reading a prompt, grey is idle. Left-click
